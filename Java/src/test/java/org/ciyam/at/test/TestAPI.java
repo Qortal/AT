@@ -2,11 +2,7 @@ package org.ciyam.at.test;
 
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
+import java.util.*;
 
 import org.ciyam.at.API;
 import org.ciyam.at.ExecutionException;
@@ -130,7 +126,7 @@ public class TestAPI extends API {
 		return true;
 	}
 
-	// Hook to be oveerridden
+	// Hook to be overridden
 	protected void preExecute(MachineState state) {
 	}
 
@@ -140,7 +136,29 @@ public class TestAPI extends API {
 		return encodedAddress;
 	}
 
+	/**
+	 * Returns address based on passed bytes.
+	 * <p>
+	 * If any byte is non-ASCII-printable, except trailing zeros,
+	 * then we assume address needs Base58 encoding.
+	 * <p>
+	 * Otherwise, assume bytes contain literal address.
+	 */
 	public static String decodeAddress(byte[] encodedAddress) {
+		int lastNonZeroIndex = -1;
+		for (int i = encodedAddress.length - 1; i >= 0; --i) {
+			byte b = encodedAddress[i];
+
+			if (b == 0 && lastNonZeroIndex == -1)
+				continue;
+
+			if (lastNonZeroIndex == -1)
+				lastNonZeroIndex = i;
+
+			if (b < 32 || b > 126)
+				return Base58.encode(Arrays.copyOf(encodedAddress, lastNonZeroIndex + 1));
+		}
+
 		String address = new String(encodedAddress, StandardCharsets.ISO_8859_1);
 		return address.replace("\0", "");
 	}
